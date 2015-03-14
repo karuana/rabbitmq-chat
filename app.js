@@ -4,11 +4,14 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
 var routes = require('./routes/index');
 var users = require('./routes/users');
 
 var app = express();
+
+var server = require('http').createServer(app);
+var io = require("socket.io")(server);
+var chat = require("./socket/socket-chat");
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -57,4 +60,11 @@ app.use(function(err, req, res, next) {
 });
 
 
+io.on("connection", chat);
+
+server.listen(8000, function () {
+    console.log('Server listening at port %d', 8000);
+});
+
+console.log("start");
 module.exports = app;

@@ -6,8 +6,8 @@ var cookieParser = require('cookie-parser');
 var session  = require('express-session');
 var bodyParser = require('body-parser');
 var routes = require('./routes/index');
+var room = require('./routes/room');
 var users = require('./routes/users');
-
 var app = express();
 
 var server = require('http').createServer(app);
@@ -24,11 +24,12 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser("ayano's theory of happiness"));
-app.use(session());
+app.use(session({ secret: "ayano's theory of happiness", cookie: { maxAge: 60000 }}));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routes);
-app.use('/api/v1', users);
+app.use('/auth',users);
+app.use('/api/v1', room);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

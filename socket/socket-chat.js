@@ -1,58 +1,76 @@
-var userNames= {};
-var numUsers = 0;
+var _ = require('underscore');
+var roomService = require('../chat/room-service');
 
 module.exports = function(socket) {
-    var addedUser = false;
-
-
     socket.on("new message", function(data){
-        console.log(data);
-       socket.broadcast.emit("new message", {
-           username: socket.username,
-           message: data
-       });
+
+        //TODO: 래빗 MQ적용
+        var roomName = data.room;
+        var userName = socket.username;
+        var message = data.message;
+
+        _.each(roomService.getClient(roomName), function(targetSocket){
+            targetSocket.emit("user left", {
+                username: userName,
+                message: message
+            });
+        });
     });
 
-    socket.on("add user", function(username){
-        socket.username = username;
+    //API 필요한거
+
+    // 방 사용자 추가
+    // data - 방, 사용자 이름
+
+    // 방 참여 확인 응답
+    // 응답 현재 방인원
 
 
-        userNames[username] = username;
-        ++numUsers;
-        addedUser = true;
+    //메시지,
+    //누가
+    //어디로
+    //메시징
+
+
+
+    socket.on("add user", function(data){
+        //room , username
+        var roomName = data.room;
+        var userName = data.username;
+        socket.username = userName;
+
+        var result = roomService.addClient(roomName, socket);
+
 
         socket.emit("login", {
-            numUsers: numUsers
+            numUsers: roomService.getRoomMemberCount(roomName),
+            result: result
         });
 
-        socket.broadcast.emit("user joined",{
-            username: socket.username,
-            numUsers: numUsers
-        });
-    });
-
-    socket.on("typing", function(){
-        socket.broadcast.emit("typing", {
-           username: socket.username
-        });
-    });
-
-    socket.on("stop typing", function(){
-        socket.broadcast.emit("stop typing", {
-            username: socket.username
-        });
-    });
-
-    socket.on("disconnect", function(){
-
-        if(addedUser) {
-            delete userNames[socket.username];
-            numUsers--;
-
-            socket.broadcast.emit("user left", {
-                username: socket.username,
-                numUsers: numUsers
+        if(result) {
+            _.each(roomService.getClient(roomName), function(targetSocket){
+                targetSocket.emit("user joined", {
+                    username: userName,
+                    numUsers: roomService.getRoomMemberCount(roomName)
+                });
             });
         }
+
+    });
+
+
+    socket.on("disconnect", function(){
+        var userName = socket.username;
+        var roomName = roomService.deleteAllRoom(socket);
+
+        if(!_.isNull(roomName) && !_.isUndefined(roomName)) {
+            _.each(roomService.getClient(roomName), function(targetSocket){
+               targetSocket.emit("user left", {
+                   username: userName,
+                   numUsers: roomService.getRoomMemberCount(roomName)
+               });
+            });
+        }
+
     });
 };

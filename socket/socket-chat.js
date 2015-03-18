@@ -10,10 +10,12 @@ module.exports = function(socket) {
         var message = data.message;
 
         _.each(roomService.getClient(roomName), function(targetSocket){
-            targetSocket.emit("user left", {
-                username: userName,
-                message: message
-            });
+            if(targetSocket !== socket) {
+                targetSocket.emit("new message", {
+                    username: userName,
+                    message: message
+                });
+            }
         });
     });
 
@@ -49,14 +51,31 @@ module.exports = function(socket) {
 
         if(result) {
             _.each(roomService.getClient(roomName), function(targetSocket){
-                targetSocket.emit("user joined", {
-                    username: userName,
-                    numUsers: roomService.getRoomMemberCount(roomName)
-                });
+                if(targetSocket !== socket) {
+                    targetSocket.emit("user joined", {
+                        username: userName,
+                        numUsers: roomService.getRoomMemberCount(roomName)
+                    });
+                }
             });
         }
 
     });
+
+    socket.on("user left" ,function(data) {
+        var roomName = data.room;
+        var userName = socket.username;
+        roomService.deleteClient(roomName, socket);
+
+        _.each(roomService.getClient(roomName), function(targetSocket){
+            if(targetSocket !== socket) {
+                targetSocket.emit("user left", {
+                    username: userName,
+                    numUsers: roomService.getRoomMemberCount(roomName)
+                });
+            }
+        });
+    })
 
 
     socket.on("disconnect", function(){
@@ -65,10 +84,12 @@ module.exports = function(socket) {
 
         if(!_.isNull(roomName) && !_.isUndefined(roomName)) {
             _.each(roomService.getClient(roomName), function(targetSocket){
-               targetSocket.emit("user left", {
-                   username: userName,
-                   numUsers: roomService.getRoomMemberCount(roomName)
-               });
+                if(targetSocket !== socket) {
+                    targetSocket.emit("user left", {
+                        username: userName,
+                        numUsers: roomService.getRoomMemberCount(roomName)
+                    });
+                }
             });
         }
 

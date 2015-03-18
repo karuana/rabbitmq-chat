@@ -7,7 +7,8 @@ router.get('/', function(req, res, next) {
 });
 
 router.get("/room", function(req, res) {
-    res.render("room")
+    console.log(req.session.name);
+    res.render("room", {user: req.session.name});
 });
 
 

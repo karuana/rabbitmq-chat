@@ -26,7 +26,7 @@ var roomService = function() {
             }
         }
         if(idx !== -1){
-            target.clients[i].splice(idx, 1);
+            target.clients.splice(idx, 1);
             return true;
         }
         return false;
@@ -56,6 +56,9 @@ var roomService = function() {
             }
             room[name].clients.push(clientid);
             return true;
+        },
+        deleteClient : function(name, clientId) {
+            deleteClient(name, clientId);
         },
         deleteAllRoom : function(clientId) {
             var i = 0;

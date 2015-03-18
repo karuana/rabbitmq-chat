@@ -1,22 +1,43 @@
 var _ = require('underscore');
 var roomService = require('../chat/room-service');
 
+var rpc = require("amqp-rpc").factory({
+    url:"amqp://guest:guest@localhost:5672"
+});
+var sleep = require('sleep');
+
+rpc.on('process', function(param, cb) {
+    //process 백 그라운드 DB작업
+    sleep.sleep(5);
+
+    cb(param);
+});
+
 module.exports = function(socket) {
+
+
+
+
     socket.on("new message", function(data){
 
         //TODO: 래빗 MQ적용
         var roomName = data.room;
         var userName = socket.username;
         var message = data.message;
-
-        _.each(roomService.getClient(roomName), function(targetSocket){
-            if(targetSocket !== socket) {
-                targetSocket.emit("new message", {
-                    username: userName,
-                    message: message
-                });
-            }
+        var selfSocket = socket;
+        rpc.call('process', {roomName: roomName, userName: userName,  message: data.message}, function(data){
+            _.each(roomService.getClient(data.roomName), function(targetSocket){
+                if(targetSocket !== selfSocket) {
+                    targetSocket.emit("new message", {
+                        username: data.userName,
+                        message: data.message
+                    });
+                }
+            });
         });
+
+
+
     });
 
     //API 필요한거
